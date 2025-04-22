@@ -58,3 +58,21 @@ ol{
     border: 2px solid #ccc;
     width: fit-content;
 }
+
+.video-box{
+    background-color: #e8f0fe;
+    padding: 20px;
+    margin: 20px auto;
+    text-align: center;
+    width: fit-content;
+    border: 1px solid #aaa;
+}
+
+.stats-box{
+    background-color: #fffbe6;
+    padding: 20px;
+    margin: 20px auto;
+    text-align: center;
+    width: fit-content;
+    border: 1px solid #aaa;
+}
