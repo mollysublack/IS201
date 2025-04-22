@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Custom Snake Game</title>
+  <style>
+    canvas {
+      background: #e0f7fa;
+      display: block;
+      margin: 10px auto;
+      border: 3px solid #00695c;
+    }
+    body {
+      font-family: Arial, sans-serif;
+      text-align: center;
+    }
+    #score {
+      font-size: 22px;
+      font-weight: bold;
+      margin-top: 10px;
+      color: #00695c;
+    }
+    button {
+      padding: 10px 20px;
+      font-size: 16px;
+      margin-top: 10px;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+  <h1>🐍 Snake Game</h1>
+  <div id="score">Score: 0</div>
+  <canvas id="game" width="450" height="450"></canvas>
+  <button id="startBtn">Start Game</button>
+  <p>Use arrow keys to play</p>
+
+  <script>
+    const canvas = document.getElementById("game");
+    const ctx = canvas.getContext("2d");
+    const startBtn = document.getElementById("startBtn");
+    const scoreDisplay = document.getElementById("score");
+
+    const box = 30;
+    const cols = canvas.width / box;
+    const rows = canvas.height / box;
+
+    let snake = [];
+    let food = {};
+    let direction = "RIGHT";
+    let lastMoveTime = 0;
+    let moveInterval = 150;
+    let gameRunning = false;
+    let score = 0;
+
+    const fruitTypes = [
+      { name: "apple", color: "#ff4d4d", points: 10 },
+      { name: "banana", color: "#ffe135", points: 15 },
+      { name: "grape", color: "#8e44ad", points: 20 }
+    ];
+
+    document.addEventListener("keydown", (e) => {
+      switch (e.key) {
+        case "ArrowUp":
+          if (direction !== "DOWN") direction = "UP";
+          break;
+        case "ArrowDown":
+          if (direction !== "UP") direction = "DOWN";
+          break;
+        case "ArrowLeft":
+          if (direction !== "RIGHT") direction = "LEFT";
+          break;
+        case "ArrowRight":
+          if (direction !== "LEFT") direction = "RIGHT";
+          break;
+      }
+    });
+
+    function startGame() {
+      startBtn.disabled = true;
+      gameRunning = true;
+      score = 0;
+      updateScore();
+      snake = [
+        { x: 5, y: 5 },
+        { x: 4, y: 5 },
+        { x: 3, y: 5 }
+      ];
+      direction = "RIGHT";
+      placeFood();
+      requestAnimationFrame(gameLoop);
+    }
+
+    function placeFood() {
+      const type = fruitTypes[Math.floor(Math.random() * fruitTypes.length)];
+      food = {
+        x: Math.floor(Math.random() * cols),
+        y: Math.floor(Math.random() * rows),
+        type: type
+      };
+    }
+
+    function updateScore() {
+      scoreDisplay.textContent = `Score: ${score}`;
+    }
+
+    function drawGrid() {
+      ctx.strokeStyle = "#b2dfdb";
+      ctx.lineWidth = 0.5;
+      for (let x = 0; x <= canvas.width; x += box) {
+        ctx.beginPath();
+        ctx.moveTo(x, 0);
+        ctx.lineTo(x, canvas.height);
+        ctx.stroke();
+      }
+      for (let y = 0; y <= canvas.height; y += box) {
+        ctx.beginPath();
+        ctx.moveTo(0, y);
+        ctx.lineTo(canvas.width, y);
+        ctx.stroke();
+      }
+    }
+
+    function drawSnake() {
+      for (let i = 0; i < snake.length; i++) {
+        const seg = snake[i];
+        const gradient = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
+        gradient.addColorStop(0, "#4caf50");
+        gradient.addColorStop(1, "#81c784");
+
+        ctx.fillStyle = i === 0 ? "#1b5e20" : gradient;
+        ctx.beginPath();
+        ctx.roundRect(seg.x * box + 2, seg.y * box + 2, box - 4, box - 4, 6);
+        ctx.fill();
+        ctx.closePath();
+      }
+    }
+
+    function drawFood() {
+      ctx.fillStyle = food.type.color;
+      ctx.beginPath();
+      ctx.arc(food.x * box + box / 2, food.y * box + box / 2, box / 2 - 4, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.closePath();
+
+      ctx.fillStyle = "#333";
+      ctx.font = "bold 14px Arial";
+      ctx.fillText(food.type.name[0].toUpperCase(), food.x * box + 9, food.y * box + 22);
+    }
+
+    function moveSnake() {
+      const head = { ...snake[0] };
+      if (direction === "LEFT") head.x -= 1;
+      if (direction === "RIGHT") head.x += 1;
+      if (direction === "UP") head.y -= 1;
+      if (direction === "DOWN") head.y += 1;
+
+      // Collision check
+      if (
+        head.x < 0 || head.y < 0 ||
+        head.x >= cols || head.y >= rows ||
+        snake.some(seg => seg.x === head.x && seg.y === head.y)
+      ) {
+        gameRunning = false;
+        alert("Game Over! Final Score: " + score);
+        location.reload();
+        return;
+      }
+
+      snake.unshift(head);
+
+      if (head.x === food.x && head.y === food.y) {
+        score += food.type.points;
+        updateScore();
+        placeFood();
+      } else {
+        snake.pop();
+      }
+    }
+
+    function gameLoop(currentTime) {
+      if (!lastMoveTime) lastMoveTime = currentTime;
+      const delta = currentTime - lastMoveTime;
+
+      if (delta > moveInterval) {
+        moveSnake();
+        lastMoveTime = currentTime;
+      }
+
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      drawGrid();
+      drawFood();
+      drawSnake();
+
+      if (gameRunning) {
+        requestAnimationFrame(gameLoop);
+      }
+    }
+
+    if (!CanvasRenderingContext2D.prototype.roundRect) {
+      CanvasRenderingContext2D.prototype.roundRect = function (x, y, w, h, r) {
+        if (w < 2 * r) r = w / 2;
+        if (h < 2 * r) r = h / 2;
+        this.beginPath();
+        this.moveTo(x + r, y);
+        this.arcTo(x + w, y, x + w, y + h, r);
+        this.arcTo(x + w, y + h, x, y + h, r);
+        this.arcTo(x, y + h, x, y, r);
+        this.arcTo(x, y, x + w, y, r);
+        this.closePath();
+        return this;
+      };
+    }
+
+    startBtn.addEventListener("click", startGame);
+  </script>
+</body>
+</html>
